@@ -4,5 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+winit = { version = "0.28.1", default-features = false }
 rand = "0.8.5"
+femtovg = "0.9.2"
+glutin = "0.30.0"
+glutin-winit = "0.3.0"
+raw-window-handle = "0.5.0"
 
