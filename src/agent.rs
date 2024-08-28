@@ -1,13 +1,23 @@
+use crate::nodes::{move_node::MoveNode, node::Node, random_node::RandomNode, BaseNode};
+use crate::util::color::Color;
+
 use std::{cell::RefCell, rc::Rc};
-use crate::nodes::{BaseNode, move_node::MoveNode, node::Node, random_node::RandomNode};
+
 pub struct Agent {
     pub brain: Vec<Rc<RefCell<Box<dyn BaseNode>>>>,
 
     //attributes that affect the way the agent interacts with environment
-    pub x: f64,     //how much we move in the x direction each frame
-    pub y: f64,     //how much we move in the y direction each frame
-    pub color: f64, //color of the agent 0 is black, 1 is white
+    pub x: f32,       //how much we move in the x direction each frame
+    pub y: f32,       //how much we move in the y direction each frame
+    pub color: Color, //color of the agent
 }
+
+pub struct RenderableAgent {
+    pub x: f32,       //how much we move in the x direction each frame
+    pub y: f32,       //how much we move in the y direction each frame
+    pub color: Color, //color of the agent
+}
+
 //TODO: let mut rng = rand::thread_rng(); instead of rand::random()
 impl Agent {
     pub fn new() -> Agent {
@@ -15,7 +25,15 @@ impl Agent {
             brain: Vec::new(),
             x: 0.0,
             y: 0.0,
-            color: rand::random(),
+            color: Color::random(),
+        }
+    }
+
+    pub fn renderable_clone(&self) -> RenderableAgent {
+        RenderableAgent {
+            x: self.x,
+            y: self.y,
+            color: self.color,
         }
     }
 

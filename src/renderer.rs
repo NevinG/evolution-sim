@@ -1,9 +1,11 @@
-use super::World;
+use super::world::RenderableWorld;
+
 use femtovg::{Canvas, Color, Renderer};
 use glutin::surface::Surface;
 use glutin::{context::PossiblyCurrentContext, display::Display};
 use glutin_winit::DisplayBuilder;
 use raw_window_handle::HasRawWindowHandle;
+use winit::dpi::PhysicalPosition;
 use std::num::NonZeroU32;
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
@@ -18,6 +20,8 @@ use glutin::{
 };
 
 //contains some helper functions for creating a window and rendering to it
+const UNIT_SIZE: u32 = 15;
+const UNIT_SIZE_F: f32 = UNIT_SIZE as f32;
 
 pub fn create_window(
     event_loop: &EventLoop<()>,
@@ -29,7 +33,7 @@ pub fn create_window(
 ) {
     let window_builder = WindowBuilder::new()
         .with_inner_size(PhysicalSize::new(1000., 600.))
-        .with_title("Femtovg");
+        .with_title("Evolution Simulator");
 
     let template = ConfigTemplateBuilder::new().with_alpha_size(8);
 
@@ -82,26 +86,49 @@ pub fn render<T: Renderer>(
     surface: &Surface<WindowSurface>,
     window: &Window,
     canvas: &mut Canvas<T>,
-    world: &World,
+    world: RenderableWorld,
+    drag: PhysicalPosition<f32>
 ) {
     // Make sure the canvas has the right size:
     let size = window.inner_size();
     canvas.set_size(size.width, size.height, window.scale_factor() as f32);
 
-    canvas.clear_rect(0, 0, size.width, size.height, Color::rgb(0, 0, 255));
+    //clear the canvas
+    canvas.clear_rect(0, 0, size.width, size.height, Color::white());
 
-    // Make smol red rectangle
+    //caluclate offset for all renders
+    let x_offset: f32 = 15.0 + drag.x;
+    let y_offset: f32 = 15.0 + drag.y;
+
+    //render the gridlines
+    //horizontal lines
+    for i in 0..(world.width + 1) {
+        canvas.clear_rect(
+            i * UNIT_SIZE + x_offset as u32,
+            y_offset as u32,
+            1,
+            world.height * UNIT_SIZE,
+            Color::black(),
+        );
+    }
+    //vertical lines
+    for i in 0..(world.height + 1) {
+        canvas.clear_rect(
+            x_offset as u32,
+            i * UNIT_SIZE + y_offset as u32,
+            world.width * UNIT_SIZE,
+            1,
+            Color::black(),
+        );
+    }
+    //render all the agents
     for agent in &world.agents {
         canvas.clear_rect(
-            agent.borrow().x as u32,
-            agent.borrow().y as u32,
-            15,
-            15,
-            Color::rgbf(
-                agent.borrow().color as f32,
-                agent.borrow().color as f32,
-                agent.borrow().color as f32,
-            ),
+            (agent.x * UNIT_SIZE_F - UNIT_SIZE_F / 2.0 + x_offset) as u32,
+            (agent.y * UNIT_SIZE_F - UNIT_SIZE_F / 2.0 + y_offset) as u32,
+            UNIT_SIZE,
+            UNIT_SIZE,
+            Color::rgbf(agent.color.r, agent.color.g, agent.color.b),
         );
     }
     // Tell renderer to execute all drawing commands
@@ -110,5 +137,4 @@ pub fn render<T: Renderer>(
     surface
         .swap_buffers(context)
         .expect("Could not swap buffers");
-    
 }

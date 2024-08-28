@@ -1,7 +1,15 @@
+use crate::agent::RenderableAgent;
 use std::{cell::RefCell, rc::Rc};
+
 use super::Agent;
 pub struct World {
     pub agents: Vec<Rc<RefCell<Agent>>>,
+    pub width: u32,
+    pub height: u32,
+}
+
+pub struct RenderableWorld {
+    pub agents: Vec<RenderableAgent>,
     pub width: u32,
     pub height: u32,
 }
@@ -10,8 +18,20 @@ impl World {
     pub fn new() -> World {
         World {
             agents: Vec::new(),
-            width: 1000,
-            height: 600,
+            width: 100,
+            height: 65,
+        }
+    }
+
+    pub fn renderable_clone(&self) -> RenderableWorld {
+        let mut renderable_agents = vec![];
+        for agent in &self.agents {
+            renderable_agents.push(Agent::renderable_clone(&agent.borrow()));
+        }
+        RenderableWorld {
+            agents: renderable_agents,
+            width: self.width,
+            height: self.height,
         }
     }
 
