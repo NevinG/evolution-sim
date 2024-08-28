@@ -1,5 +1,4 @@
 use std::{cell::RefCell, rc::Rc};
-
 use super::Agent;
 pub struct World {
     pub agents: Vec<Rc<RefCell<Agent>>>,

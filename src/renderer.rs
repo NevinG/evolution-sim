@@ -110,4 +110,5 @@ pub fn render<T: Renderer>(
     surface
         .swap_buffers(context)
         .expect("Could not swap buffers");
+    
 }
