@@ -6,12 +6,14 @@ pub struct World {
     pub agents: Vec<Rc<RefCell<Agent>>>,
     pub width: u32,
     pub height: u32,
+    pub food: Vec<Vec<f32>>,
 }
 
 pub struct RenderableWorld {
     pub agents: Vec<RenderableAgent>,
     pub width: u32,
     pub height: u32,
+    pub food: Vec<Vec<f32>>,
 }
 
 impl World {
@@ -20,6 +22,9 @@ impl World {
             agents: Vec::new(),
             width: 100,
             height: 65,
+            food: (0..100)
+                .map(|_| (0..65).map(|_| rand::random::<f32>()).collect())
+                .collect(), //random food grid
         }
     }
 
@@ -32,6 +37,7 @@ impl World {
             agents: renderable_agents,
             width: self.width,
             height: self.height,
+            food: self.food.clone(),
         }
     }
 
@@ -52,21 +58,21 @@ impl World {
         }
     }
 
-    pub fn simulate_frame(&mut self) {
-        for agent in &self.agents {
+    pub fn simulate_frame(world: Rc<RefCell<World>>) {
+        for agent in &world.borrow().agents {
             for node in &agent.borrow().brain {
                 if node.borrow().get_output().is_some() {
                     continue;
                 }
                 unsafe {
                     let node_mut: &mut _ = &mut *node.as_ptr();
-                    node_mut.calculate_output(Rc::clone(&agent), self);
+                    node_mut.calculate_output(Rc::clone(&agent), Rc::clone(&world));
                 }
             }
         }
 
         //reset all nodes some values
-        for agent in &self.agents {
+        for agent in &world.borrow().agents {
             for node in &agent.borrow().brain {
                 node.borrow_mut().reset_output();
             }

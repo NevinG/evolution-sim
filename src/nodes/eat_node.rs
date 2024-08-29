@@ -1,7 +1,7 @@
 use super::{Agent, BaseNode, World};
 use std::{cell::RefCell, rc::Rc};
 
-pub struct Node {
+pub struct EatNode {
     // Define the properties of the node here
     inputs: Vec<Rc<RefCell<Box<dyn BaseNode>>>>, //all nodes that give input to this node
     weights: Vec<f32>,                           //weights for each input
@@ -11,9 +11,9 @@ pub struct Node {
     output: Option<f32>, //this is the value all nodes in the outputs array use, if the Option is None this Node has not been calculated yet
 }
 
-impl Node {
-    pub fn new() -> Node {
-        Node {
+impl EatNode {
+    pub fn new() -> EatNode {
+        EatNode {
             inputs: Vec::new(),
             weights: Vec::new(),
             outputs: Vec::new(),
@@ -23,7 +23,7 @@ impl Node {
     }
 }
 
-impl BaseNode for Node {
+impl BaseNode for EatNode {
     fn calculate_output(&mut self, agent: Rc<RefCell<Agent>>, world: Rc<RefCell<World>>) {
         //calculate output of all input nodes first
         let mut output: f32 = 0.0;
@@ -46,6 +46,14 @@ impl BaseNode for Node {
         //TODO: research what activation functions I should use for this project
         //apply activation function on output
         output = output.tanh();
+
+        //eat output amount of food
+        //TODO:
+        let new_food = world.borrow().food[agent.borrow().x.min(99.0) as usize]
+            [agent.borrow().y.min(64.0) as usize]
+            - (output + 1.0) / 2.0 / 1000.0;
+        unsafe { &mut *world.as_ptr() }.food[agent.borrow().x.min(99.0) as usize]
+            [agent.borrow().y.min(64.0) as usize] = new_food.max(0.0);
 
         //set the output
         self.output = Some(output);

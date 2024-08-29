@@ -11,6 +11,8 @@ use world::World;
 use femtovg::renderer::OpenGl;
 use femtovg::Canvas;
 use glutin::prelude::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -22,17 +24,17 @@ fn main() {
 
     //game logic thread
     thread::spawn(move || {
-        let mut world = World::new();
-        world.add_n_agents(500);
+        let world = Rc::new(RefCell::new(World::new()));
+        world.borrow_mut().add_n_agents(100);
 
         const FRAME_RATE: u32 = 60;
         let frame_duration = Duration::from_secs(1) / FRAME_RATE;
         let mut last_frame_time = Instant::now();
 
         loop {
-            world.simulate_frame();
+            World::simulate_frame(Rc::clone(&world));
             if last_frame_time.elapsed() >= frame_duration {
-                send.send(World::renderable_clone(&world)).unwrap();
+                send.send(World::renderable_clone(&world.borrow())).unwrap();
                 last_frame_time = Instant::now();
             }
         }
@@ -49,8 +51,8 @@ fn main() {
     let mut canvas = Canvas::new(renderer).expect("Cannot create canvas");
     canvas.set_size(1000, 600, window.scale_factor() as f32);
 
-    let mut drag: PhysicalPosition<f32> = PhysicalPosition{x: 0.0, y: 0.0};
-    let mut last_position: PhysicalPosition<f64> = PhysicalPosition{x: 0.0, y: 0.0};
+    let mut drag: PhysicalPosition<f32> = PhysicalPosition { x: 0.0, y: 0.0 };
+    let mut last_position: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };
     let mut left_mouse_down = false;
     event_loop.run(move |event, _target, control_flow| {
         //check if new thing to render
@@ -62,17 +64,15 @@ fn main() {
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::MouseInput { button, state, .. } => {
-                    match state {
-                        ElementState::Pressed => {
-                            if let MouseButton::Left = button {
-                                left_mouse_down = true;
-                            }
+                WindowEvent::MouseInput { button, state, .. } => match state {
+                    ElementState::Pressed => {
+                        if let MouseButton::Left = button {
+                            left_mouse_down = true;
                         }
-                        ElementState::Released => {
-                            if let MouseButton::Left = button {
-                                left_mouse_down = false;
-                            }
+                    }
+                    ElementState::Released => {
+                        if let MouseButton::Left = button {
+                            left_mouse_down = false;
                         }
                     }
                 },

@@ -5,8 +5,8 @@ use glutin::surface::Surface;
 use glutin::{context::PossiblyCurrentContext, display::Display};
 use glutin_winit::DisplayBuilder;
 use raw_window_handle::HasRawWindowHandle;
-use winit::dpi::PhysicalPosition;
 use std::num::NonZeroU32;
+use winit::dpi::PhysicalPosition;
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 use winit::{dpi::PhysicalSize, window::Window};
@@ -87,7 +87,7 @@ pub fn render<T: Renderer>(
     window: &Window,
     canvas: &mut Canvas<T>,
     world: RenderableWorld,
-    drag: PhysicalPosition<f32>
+    drag: PhysicalPosition<f32>,
 ) {
     // Make sure the canvas has the right size:
     let size = window.inner_size();
@@ -100,27 +100,25 @@ pub fn render<T: Renderer>(
     let x_offset: f32 = 15.0 + drag.x;
     let y_offset: f32 = 15.0 + drag.y;
 
-    //render the gridlines
-    //horizontal lines
-    for i in 0..(world.width + 1) {
-        canvas.clear_rect(
-            i * UNIT_SIZE + x_offset as u32,
-            y_offset as u32,
-            1,
-            world.height * UNIT_SIZE,
-            Color::black(),
-        );
+    //render the food
+    // render the food
+    for i in 0..world.width {
+        for j in 0..world.height {
+            let food_amount = world.food[i as usize][j as usize];
+            canvas.clear_rect(
+                i * UNIT_SIZE + x_offset as u32,
+                j * UNIT_SIZE + y_offset as u32,
+                UNIT_SIZE,
+                UNIT_SIZE,
+                Color::rgbf(
+                    1.0 - food_amount,
+                    1.0 - food_amount / 2.0,
+                    1.0 - food_amount,
+                ),
+            );
+        }
     }
-    //vertical lines
-    for i in 0..(world.height + 1) {
-        canvas.clear_rect(
-            x_offset as u32,
-            i * UNIT_SIZE + y_offset as u32,
-            world.width * UNIT_SIZE,
-            1,
-            Color::black(),
-        );
-    }
+
     //render all the agents
     for agent in &world.agents {
         canvas.clear_rect(

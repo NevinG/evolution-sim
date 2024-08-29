@@ -36,7 +36,7 @@ impl MoveNode {
 }
 
 impl BaseNode for MoveNode {
-    fn calculate_output(&mut self, agent: Rc<RefCell<Agent>>, world: &World) {
+    fn calculate_output(&mut self, agent: Rc<RefCell<Agent>>, world: Rc<RefCell<World>>) {
         //calculate output of all input nodes first
         let mut output: f32 = 0.0;
 
@@ -46,7 +46,7 @@ impl BaseNode for MoveNode {
             if input.borrow().get_output().is_none() {
                 unsafe {
                     let input_mut = &mut *input.as_ptr();
-                    input_mut.calculate_output(Rc::clone(&agent), world);
+                    input_mut.calculate_output(Rc::clone(&agent), Rc::clone(&world));
                 }
             }
             output += input.borrow().get_output().unwrap() * self.weights[i];
@@ -68,12 +68,12 @@ impl BaseNode for MoveNode {
         }
 
         //bounds check
-        if agent.borrow().x > world.width as f32 {
-            unsafe { (*agent.as_ptr()).x = world.width as f32 };
+        if agent.borrow().x > world.borrow().width as f32 {
+            unsafe { (*agent.as_ptr()).x = world.borrow().width as f32 };
         }
 
-        if agent.borrow().y > world.height as f32 {
-            unsafe { (*agent.as_ptr()).y = world.height as f32 };
+        if agent.borrow().y > world.borrow().height as f32 {
+            unsafe { (*agent.as_ptr()).y = world.borrow().height as f32 };
         }
 
         if agent.borrow().x < 0.0 {

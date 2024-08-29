@@ -16,7 +16,7 @@ impl RandomNode {
 }
 
 impl BaseNode for RandomNode {
-    fn calculate_output(&mut self, _agent: Rc<RefCell<Agent>>, _world: &World) {
+    fn calculate_output(&mut self, _agent: Rc<RefCell<Agent>>, _world: Rc<RefCell<World>>) {
         self.output = Some(rand::random::<f32>() * 2.0 - 1.0); //random number [-1,1]
     }
 

@@ -1,3 +1,4 @@
+use crate::nodes::eat_node::EatNode;
 use crate::nodes::{move_node::MoveNode, node::Node, random_node::RandomNode, BaseNode};
 use crate::util::color::Color;
 
@@ -38,7 +39,7 @@ impl Agent {
     }
 
     pub fn add_random_node(&mut self) {
-        match rand::random::<usize>() % 3 {
+        match rand::random::<usize>() % 4 {
             0 => self
                 .brain
                 .push(Rc::new(RefCell::new(Box::new(RandomNode::new())))),
@@ -48,6 +49,9 @@ impl Agent {
             2 => self
                 .brain
                 .push(Rc::new(RefCell::new(Box::new(MoveNode::new())))),
+            3 => self
+                .brain
+                .push(Rc::new(RefCell::new(Box::new(EatNode::new())))),
             _ => panic!("Random number generator failed"),
         }
     }
