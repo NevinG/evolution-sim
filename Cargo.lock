@@ -209,6 +209,7 @@ dependencies = [
  "glutin-winit",
  "rand",
  "raw-window-handle",
+ "resource",
  "winit",
 ]
 
@@ -767,6 +768,12 @@ checksum = "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa"
 dependencies = [
  "bitflags 1.3.2",
 ]
+
+[[package]]
+name = "resource"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11a7f6703c396037a02da99195e49138c37f3cc5146cb95f2f7d26debc0c5622"
 
 [[package]]
 name = "rgb"

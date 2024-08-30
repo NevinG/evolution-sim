@@ -1,11 +1,14 @@
+use super::gui::{game::Game, menu::Menu, GraphicsWindow};
 use super::world::RenderableWorld;
 
-use femtovg::{Canvas, Color, Renderer};
+use femtovg::{Canvas, FontId, Renderer};
 use glutin::surface::Surface;
 use glutin::{context::PossiblyCurrentContext, display::Display};
 use glutin_winit::DisplayBuilder;
 use raw_window_handle::HasRawWindowHandle;
+use resource::resource;
 use std::num::NonZeroU32;
+use std::sync::{Arc, Mutex};
 use winit::dpi::PhysicalPosition;
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
@@ -19,10 +22,89 @@ use glutin::{
     surface::{SurfaceAttributesBuilder, WindowSurface},
 };
 
-//contains some helper functions for creating a window and rendering to it
-const UNIT_SIZE: u32 = 15;
-const UNIT_SIZE_F: f32 = UNIT_SIZE as f32;
+pub enum ClickAction {
+    MoveWindow,
+    StartGame,
+    None,
+}
 
+impl Clone for ClickAction {
+    fn clone(&self) -> Self {
+        match self {
+            ClickAction::MoveWindow => ClickAction::MoveWindow,
+            ClickAction::StartGame => ClickAction::StartGame,
+            ClickAction::None => ClickAction::None,
+        }
+    }
+}
+pub struct GraphicsRenderer<T: Renderer> {
+    game_started: Arc<Mutex<bool>>,
+    cur_window: usize,
+    windows: Vec<Box<dyn GraphicsWindow<T>>>,
+    font_id: FontId,
+}
+
+impl<T: Renderer> GraphicsRenderer<T> {
+    pub fn new(canvas: &mut Canvas<T>, game_started: Arc<Mutex<bool>>) -> GraphicsRenderer<T> {
+        GraphicsRenderer {
+            game_started,
+            cur_window: 0,
+            windows: vec![Box::new(Menu::new()), Box::new(Game::new())],
+            font_id: canvas
+                .add_font_mem(&resource!("src/fonts/Roboto-Regular.ttf"))
+                .expect("Cannot add font"),
+        }
+    }
+
+    pub fn render(
+        &mut self,
+        context: &PossiblyCurrentContext,
+        surface: &Surface<WindowSurface>,
+        window: &Window,
+        canvas: &mut Canvas<T>,
+        drag: PhysicalPosition<f32>,
+        world: Option<&RenderableWorld>,
+    ) {
+        self.windows[self.cur_window].draw(
+            context,
+            surface,
+            window,
+            canvas,
+            self.font_id,
+            drag,
+            world,
+        );
+    }
+
+    pub fn click(
+        &mut self,
+        context: &PossiblyCurrentContext,
+        surface: &Surface<WindowSurface>,
+        window: &Window,
+        canvas: &mut Canvas<T>,
+        pos: PhysicalPosition<f64>,
+    ) {
+        //check current windows gui for click on button
+        match self.windows[self.cur_window].click(pos) {
+            ClickAction::MoveWindow => {
+                self.cur_window += 1;
+
+                if self.cur_window == 1 {
+                    self.render(
+                        context,
+                        surface,
+                        window,
+                        canvas,
+                        PhysicalPosition { x: 0.0, y: 0.0 },
+                        None,
+                    );
+                }
+            }
+            ClickAction::StartGame => *self.game_started.lock().unwrap() = true,
+            _ => {}
+        }
+    }
+}
 pub fn create_window(
     event_loop: &EventLoop<()>,
 ) -> (
@@ -79,60 +161,4 @@ pub fn create_window(
         window,
         surface,
     )
-}
-
-pub fn render<T: Renderer>(
-    context: &PossiblyCurrentContext,
-    surface: &Surface<WindowSurface>,
-    window: &Window,
-    canvas: &mut Canvas<T>,
-    world: RenderableWorld,
-    drag: PhysicalPosition<f32>,
-) {
-    // Make sure the canvas has the right size:
-    let size = window.inner_size();
-    canvas.set_size(size.width, size.height, window.scale_factor() as f32);
-
-    //clear the canvas
-    canvas.clear_rect(0, 0, size.width, size.height, Color::white());
-
-    //caluclate offset for all renders
-    let x_offset: f32 = 15.0 + drag.x;
-    let y_offset: f32 = 15.0 + drag.y;
-
-    //render the food
-    // render the food
-    for i in 0..world.width {
-        for j in 0..world.height {
-            let food_amount = world.food[i as usize][j as usize];
-            canvas.clear_rect(
-                i * UNIT_SIZE + x_offset as u32,
-                j * UNIT_SIZE + y_offset as u32,
-                UNIT_SIZE,
-                UNIT_SIZE,
-                Color::rgbf(
-                    1.0 - food_amount,
-                    1.0 - food_amount / 2.0,
-                    1.0 - food_amount,
-                ),
-            );
-        }
-    }
-
-    //render all the agents
-    for agent in &world.agents {
-        canvas.clear_rect(
-            (agent.x * UNIT_SIZE_F - UNIT_SIZE_F / 2.0 + x_offset) as u32,
-            (agent.y * UNIT_SIZE_F - UNIT_SIZE_F / 2.0 + y_offset) as u32,
-            UNIT_SIZE,
-            UNIT_SIZE,
-            Color::rgbf(agent.color.r, agent.color.g, agent.color.b),
-        );
-    }
-    // Tell renderer to execute all drawing commands
-    canvas.flush();
-    // Display what we've just rendered
-    surface
-        .swap_buffers(context)
-        .expect("Could not swap buffers");
 }

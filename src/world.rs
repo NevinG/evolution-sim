@@ -20,8 +20,8 @@ impl World {
     pub fn new() -> World {
         World {
             agents: Vec::new(),
-            width: 100,
-            height: 65,
+            width: 25,
+            height: 25,
             food: (0..100)
                 .map(|_| (0..65).map(|_| rand::random::<f32>()).collect())
                 .collect(), //random food grid
@@ -46,11 +46,11 @@ impl World {
             let agent = Rc::new(RefCell::new(Agent::new()));
 
             //TODO: change the default agent brain, and let you customize this
-            for _ in 0..100 {
+            for _ in 0..15 {
                 agent.borrow_mut().add_random_node();
             }
 
-            for _ in 0..200 {
+            for _ in 0..25 {
                 agent.borrow_mut().connect_random_nodes();
             }
 

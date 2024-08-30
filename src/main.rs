@@ -1,10 +1,12 @@
 mod agent;
+mod gui;
 mod nodes;
 mod renderer;
 mod util;
 mod world;
 
 use agent::Agent;
+use renderer::GraphicsRenderer;
 use winit::dpi::PhysicalPosition;
 use world::World;
 
@@ -13,7 +15,7 @@ use femtovg::Canvas;
 use glutin::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use winit::event::{ElementState, Event, MouseButton, WindowEvent};
@@ -21,6 +23,8 @@ use winit::event_loop::{ControlFlow, EventLoop};
 fn main() {
     //channel used for sending the world to the rendering thread
     let (send, recv) = mpsc::channel();
+    let started_a = Arc::new(Mutex::new(false));
+    let started_b = Arc::clone(&started_a);
 
     //game logic thread
     thread::spawn(move || {
@@ -30,6 +34,11 @@ fn main() {
         const FRAME_RATE: u32 = 60;
         let frame_duration = Duration::from_secs(1) / FRAME_RATE;
         let mut last_frame_time = Instant::now();
+
+        //wait for game to start
+        while !*started_b.lock().unwrap() {
+            thread::sleep(Duration::from_millis(12));
+        }
 
         loop {
             World::simulate_frame(Rc::clone(&world));
@@ -50,14 +59,20 @@ fn main() {
 
     let mut canvas = Canvas::new(renderer).expect("Cannot create canvas");
     canvas.set_size(1000, 600, window.scale_factor() as f32);
+    let mut graphics_renderer =
+        GraphicsRenderer::<OpenGl>::new(&mut canvas, Arc::clone(&started_a));
 
     let mut drag: PhysicalPosition<f32> = PhysicalPosition { x: 0.0, y: 0.0 };
     let mut last_position: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };
     let mut left_mouse_down = false;
+
+    graphics_renderer.render(&context, &surface, &window, &mut canvas, drag, None);
     event_loop.run(move |event, _target, control_flow| {
         //check if new thing to render
         if let Ok(world) = recv.try_recv() {
-            renderer::render(&context, &surface, &window, &mut canvas, world, drag);
+            //renderer::render(&context, &surface, &window, &mut canvas, world, drag);
+            //renderer::render_menu(&context, &surface, &window, &mut canvas, font_id);
+            graphics_renderer.render(&context, &surface, &window, &mut canvas, drag, Some(&world));
         }
 
         //close window on exit
@@ -73,6 +88,15 @@ fn main() {
                     ElementState::Released => {
                         if let MouseButton::Left = button {
                             left_mouse_down = false;
+
+                            //check if user clicked anything
+                            graphics_renderer.click(
+                                &context,
+                                &surface,
+                                &window,
+                                &mut canvas,
+                                last_position,
+                            );
                         }
                     }
                 },

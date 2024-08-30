@@ -10,4 +10,5 @@ femtovg = "0.9.2"
 glutin = "0.30.0"
 glutin-winit = "0.3.0"
 raw-window-handle = "0.5.0"
+resource = "0.5.0"
 
