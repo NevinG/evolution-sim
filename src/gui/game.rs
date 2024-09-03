@@ -107,7 +107,11 @@ impl<T: Renderer> GraphicsWindow<T> for Game {
                 //gui buttons
                 let gui_location = if !world.controls.lock().unwrap().paused {
                     let gui_location = self.button_right(
-                        match world.controls.lock().unwrap().speed {GameSpeed::Slow => ">", GameSpeed::Medium => ">>", GameSpeed::Fast => ">>>"},
+                        match world.controls.lock().unwrap().speed {
+                            GameSpeed::Slow => ">",
+                            GameSpeed::Medium => ">>",
+                            GameSpeed::Fast => ">>>",
+                        },
                         5.0,
                         5.0,
                         Box::new(|| {}),
@@ -132,7 +136,11 @@ impl<T: Renderer> GraphicsWindow<T> for Game {
                 };
 
                 self.button_right(
-                    if world.controls.lock().unwrap().paused {"Play"} else {"Pause"},
+                    if world.controls.lock().unwrap().paused {
+                        "Play"
+                    } else {
+                        "Pause"
+                    },
                     5.0,
                     (size.width - gui_location.x + 5) as f32,
                     Box::new(|| (println!("play/pause"))),

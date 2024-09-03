@@ -25,7 +25,7 @@ pub trait GraphicsWindow<T: Renderer> {
         canvas: &mut Canvas<T>,
         font_id: FontId,
         drag: PhysicalPosition<f32>,
-        world: Option<&RenderableWorld>
+        world: Option<&RenderableWorld>,
     );
 
     fn click(&mut self, pos: PhysicalPosition<f64>) -> ClickAction;

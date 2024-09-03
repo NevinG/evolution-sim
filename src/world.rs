@@ -1,6 +1,10 @@
 use crate::agent::RenderableAgent;
 use std::{
-    cell::RefCell, rc::Rc, sync::{Arc, Mutex}, thread, time::Duration
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
 };
 
 use super::Agent;
@@ -9,7 +13,7 @@ use super::Agent;
 pub enum GameSpeed {
     Slow,
     Medium,
-    Fast
+    Fast,
 }
 pub struct WorldControls {
     pub paused: bool,
@@ -89,7 +93,9 @@ impl World {
 
     pub fn simulate_frame(world: Rc<RefCell<World>>) {
         //skip if paused
-        if world.borrow().controls.lock().unwrap().paused && ! world.borrow().controls.lock().unwrap().step {
+        if world.borrow().controls.lock().unwrap().paused
+            && !world.borrow().controls.lock().unwrap().step
+        {
             return;
         }
 
@@ -102,7 +108,7 @@ impl World {
             match world.borrow().controls.lock().unwrap().speed {
                 GameSpeed::Slow => sleep_time = Some(Duration::from_millis(400)),
                 GameSpeed::Medium => sleep_time = Some(Duration::from_millis(33)),
-                GameSpeed::Fast => {},
+                GameSpeed::Fast => {}
             }
             if let Some(duration) = sleep_time {
                 thread::sleep(duration);

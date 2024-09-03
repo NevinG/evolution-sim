@@ -62,7 +62,7 @@ impl<T: Renderer> GraphicsRenderer<T> {
         window: &Window,
         canvas: &mut Canvas<T>,
         drag: PhysicalPosition<f32>,
-        world: Option<&RenderableWorld>
+        world: Option<&RenderableWorld>,
     ) {
         self.windows[self.cur_window].draw(
             context,
@@ -71,7 +71,7 @@ impl<T: Renderer> GraphicsRenderer<T> {
             canvas,
             self.font_id,
             drag,
-            world
+            world,
         );
     }
 
@@ -95,7 +95,7 @@ impl<T: Renderer> GraphicsRenderer<T> {
                         window,
                         canvas,
                         PhysicalPosition { x: 0.0, y: 0.0 },
-                        None
+                        None,
                     );
                 }
             }
@@ -103,17 +103,17 @@ impl<T: Renderer> GraphicsRenderer<T> {
             ClickAction::PlayPause => {
                 let paused_state = (*self.world_controls.lock().unwrap()).paused;
                 (*self.world_controls.lock().unwrap()).paused = !paused_state;
-            },
+            }
             ClickAction::Step => {
                 (*self.world_controls.lock().unwrap()).step = true;
-            },
+            }
             ClickAction::SpeedChange => {
                 let current_speed = (*self.world_controls.lock().unwrap()).speed;
-                
+
                 (*self.world_controls.lock().unwrap()).speed = match current_speed {
                     GameSpeed::Slow => GameSpeed::Medium,
                     GameSpeed::Medium => GameSpeed::Fast,
-                    GameSpeed::Fast => GameSpeed::Slow
+                    GameSpeed::Fast => GameSpeed::Slow,
                 }
             }
             _ => {}
