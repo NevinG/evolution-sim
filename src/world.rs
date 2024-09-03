@@ -1,8 +1,34 @@
 use crate::agent::RenderableAgent;
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell, rc::Rc, sync::{Arc, Mutex}, thread, time::Duration
+};
 
 use super::Agent;
+
+#[derive(Copy, Clone)]
+pub enum GameSpeed {
+    Slow,
+    Medium,
+    Fast
+}
+pub struct WorldControls {
+    pub paused: bool,
+    pub started: bool,
+    pub step: bool,
+    pub speed: GameSpeed,
+}
+impl WorldControls {
+    pub fn new() -> WorldControls {
+        WorldControls {
+            paused: true,
+            started: false,
+            step: false,
+            speed: GameSpeed::Slow,
+        }
+    }
+}
 pub struct World {
+    pub controls: Arc<Mutex<WorldControls>>,
     pub agents: Vec<Rc<RefCell<Agent>>>,
     pub width: u32,
     pub height: u32,
@@ -10,6 +36,7 @@ pub struct World {
 }
 
 pub struct RenderableWorld {
+    pub controls: Arc<Mutex<WorldControls>>,
     pub agents: Vec<RenderableAgent>,
     pub width: u32,
     pub height: u32,
@@ -17,8 +44,9 @@ pub struct RenderableWorld {
 }
 
 impl World {
-    pub fn new() -> World {
+    pub fn new(controls: Arc<Mutex<WorldControls>>) -> World {
         World {
+            controls,
             agents: Vec::new(),
             width: 25,
             height: 25,
@@ -34,6 +62,7 @@ impl World {
             renderable_agents.push(Agent::renderable_clone(&agent.borrow()));
         }
         RenderableWorld {
+            controls: Arc::clone(&self.controls),
             agents: renderable_agents,
             width: self.width,
             height: self.height,
@@ -59,6 +88,27 @@ impl World {
     }
 
     pub fn simulate_frame(world: Rc<RefCell<World>>) {
+        //skip if paused
+        if world.borrow().controls.lock().unwrap().paused && ! world.borrow().controls.lock().unwrap().step {
+            return;
+        }
+
+        //use for stepping one frame at a time
+        if world.borrow().controls.lock().unwrap().step {
+            world.borrow().controls.lock().unwrap().step = false;
+        } else {
+            //control speed of slow, medium, fast
+            let mut sleep_time = None;
+            match world.borrow().controls.lock().unwrap().speed {
+                GameSpeed::Slow => sleep_time = Some(Duration::from_millis(400)),
+                GameSpeed::Medium => sleep_time = Some(Duration::from_millis(33)),
+                GameSpeed::Fast => {},
+            }
+            if let Some(duration) = sleep_time {
+                thread::sleep(duration);
+            }
+        }
+
         for agent in &world.borrow().agents {
             for node in &agent.borrow().brain {
                 if node.borrow().get_output().is_some() {

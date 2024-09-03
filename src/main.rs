@@ -8,7 +8,7 @@ mod world;
 use agent::Agent;
 use renderer::GraphicsRenderer;
 use winit::dpi::PhysicalPosition;
-use world::World;
+use world::{World, WorldControls};
 
 use femtovg::renderer::OpenGl;
 use femtovg::Canvas;
@@ -23,12 +23,13 @@ use winit::event_loop::{ControlFlow, EventLoop};
 fn main() {
     //channel used for sending the world to the rendering thread
     let (send, recv) = mpsc::channel();
-    let started_a = Arc::new(Mutex::new(false));
-    let started_b = Arc::clone(&started_a);
 
+    let world_controls = Arc::new(Mutex::new(WorldControls::new()));
+    let world_controls_clone = Arc::clone(&world_controls);
     //game logic thread
     thread::spawn(move || {
-        let world = Rc::new(RefCell::new(World::new()));
+        let world_controls_clone_2 = Arc::clone(&world_controls_clone);
+        let world = Rc::new(RefCell::new(World::new(world_controls_clone_2)));
         world.borrow_mut().add_n_agents(100);
 
         const FRAME_RATE: u32 = 60;
@@ -36,7 +37,7 @@ fn main() {
         let mut last_frame_time = Instant::now();
 
         //wait for game to start
-        while !*started_b.lock().unwrap() {
+        while !(*world_controls_clone.lock().unwrap()).started {
             thread::sleep(Duration::from_millis(12));
         }
 
@@ -60,7 +61,7 @@ fn main() {
     let mut canvas = Canvas::new(renderer).expect("Cannot create canvas");
     canvas.set_size(1000, 600, window.scale_factor() as f32);
     let mut graphics_renderer =
-        GraphicsRenderer::<OpenGl>::new(&mut canvas, Arc::clone(&started_a));
+        GraphicsRenderer::<OpenGl>::new(&mut canvas, Arc::clone(&world_controls));
 
     let mut drag: PhysicalPosition<f32> = PhysicalPosition { x: 0.0, y: 0.0 };
     let mut last_position: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };

@@ -29,13 +29,13 @@ impl Menu {
         canvas: &mut Canvas<T>,
         window: &Window,
         paint: &Paint,
-    ) -> f32 {
-        let (height, gui_location) = gui::button_centered(text, height, canvas, window, paint);
+    ) -> GUILocation {
+        let gui_location = gui::button_centered(text, height, canvas, window, paint);
 
         //add button to window
         self.buttons.push((gui_location, callback, click_action));
 
-        height
+        gui_location
     }
 }
 
@@ -65,10 +65,11 @@ impl<T: Renderer> GraphicsWindow<T> for Menu {
         fill_paint.set_font(&[font_id]);
         fill_paint.set_font_size(32.0);
 
-        let height = gui::text_centered("Evolution Simulator", 5.0, canvas, window, &fill_paint);
+        let gui_location =
+            gui::text_centered("Evolution Simulator", 5.0, canvas, window, &fill_paint);
         self.button_centered(
             "Start",
-            height + 5.0,
+            (gui_location.height + gui_location.y) as f32 + 5.0,
             Box::new(|| {}),
             ClickAction::MoveWindow,
             canvas,

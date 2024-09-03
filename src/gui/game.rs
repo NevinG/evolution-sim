@@ -7,7 +7,7 @@ use winit::window::Window;
 
 use crate::gui;
 use crate::renderer::ClickAction;
-use crate::world::RenderableWorld;
+use crate::world::{GameSpeed, RenderableWorld};
 
 use super::{GUILocation, GraphicsWindow};
 
@@ -26,18 +26,19 @@ impl Game {
         &mut self,
         text: &str,
         height: f32,
+        right_pad: f32,
         callback: Box<dyn FnMut() -> ()>,
         click_action: ClickAction,
         canvas: &mut Canvas<T>,
         window: &Window,
         paint: &Paint,
-    ) -> f32 {
-        let (height, gui_location) = gui::button_right(text, height, 5.0, canvas, window, paint);
+    ) -> GUILocation {
+        let gui_location = gui::button_right(text, height, right_pad, canvas, window, paint);
 
         //add button to window
         self.buttons.push((gui_location, callback, click_action));
 
-        height
+        gui_location
     }
 }
 
@@ -66,6 +67,11 @@ impl<T: Renderer> GraphicsWindow<T> for Game {
         let x_offset: f32 = 15.0 + drag.x;
         let y_offset: f32 = 15.0 + drag.y;
 
+        //make paint for drawing text
+        let mut fill_paint = Paint::color(Color::black());
+        fill_paint.set_font(&[font_id]);
+        fill_paint.set_font_size(32.0);
+
         //game could be rendered before world is created
         match world {
             Some(world) => {
@@ -87,7 +93,6 @@ impl<T: Renderer> GraphicsWindow<T> for Game {
                         );
                     }
                 }
-
                 //render all the agents
                 for agent in &world.agents {
                     canvas.clear_rect(
@@ -98,25 +103,60 @@ impl<T: Renderer> GraphicsWindow<T> for Game {
                         Color::rgbf(agent.color.r, agent.color.g, agent.color.b),
                     );
                 }
+
+                //gui buttons
+                let gui_location = if !world.controls.lock().unwrap().paused {
+                    let gui_location = self.button_right(
+                        match world.controls.lock().unwrap().speed {GameSpeed::Slow => ">", GameSpeed::Medium => ">>", GameSpeed::Fast => ">>>"},
+                        5.0,
+                        5.0,
+                        Box::new(|| {}),
+                        ClickAction::SpeedChange,
+                        canvas,
+                        window,
+                        &fill_paint,
+                    );
+                    gui_location
+                } else {
+                    let gui_location = self.button_right(
+                        "Step",
+                        5.0,
+                        5.0,
+                        Box::new(|| {}),
+                        ClickAction::Step,
+                        canvas,
+                        window,
+                        &fill_paint,
+                    );
+                    gui_location
+                };
+
+                self.button_right(
+                    if world.controls.lock().unwrap().paused {"Play"} else {"Pause"},
+                    5.0,
+                    (size.width - gui_location.x + 5) as f32,
+                    Box::new(|| (println!("play/pause"))),
+                    ClickAction::PlayPause,
+                    canvas,
+                    window,
+                    &fill_paint,
+                );
             }
-            _ => {}
+            _ => {
+                //render start button gui
+                self.button_right(
+                    "Start",
+                    5.0,
+                    5.0,
+                    Box::new(|| {}),
+                    ClickAction::StartGame,
+                    canvas,
+                    window,
+                    &fill_paint,
+                );
+            }
         }
 
-        //render menu stuff
-        let mut fill_paint = Paint::color(Color::black());
-        fill_paint.set_font(&[font_id]);
-        fill_paint.set_font_size(32.0);
-
-        //render GUI
-        self.button_right(
-            "Start",
-            5.0,
-            Box::new(|| {}),
-            ClickAction::StartGame,
-            canvas,
-            window,
-            &fill_paint,
-        );
         // Tell renderer to execute all drawing commands
         canvas.flush();
         // Display what we've just rendered

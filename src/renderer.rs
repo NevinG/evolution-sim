@@ -1,3 +1,5 @@
+use crate::world::{GameSpeed, WorldControls};
+
 use super::gui::{game::Game, menu::Menu, GraphicsWindow};
 use super::world::RenderableWorld;
 
@@ -22,32 +24,29 @@ use glutin::{
     surface::{SurfaceAttributesBuilder, WindowSurface},
 };
 
+#[derive(Clone)]
 pub enum ClickAction {
     MoveWindow,
     StartGame,
+    PlayPause,
+    Step,
+    SpeedChange,
     None,
 }
-
-impl Clone for ClickAction {
-    fn clone(&self) -> Self {
-        match self {
-            ClickAction::MoveWindow => ClickAction::MoveWindow,
-            ClickAction::StartGame => ClickAction::StartGame,
-            ClickAction::None => ClickAction::None,
-        }
-    }
-}
 pub struct GraphicsRenderer<T: Renderer> {
-    game_started: Arc<Mutex<bool>>,
+    world_controls: Arc<Mutex<WorldControls>>,
     cur_window: usize,
     windows: Vec<Box<dyn GraphicsWindow<T>>>,
     font_id: FontId,
 }
 
 impl<T: Renderer> GraphicsRenderer<T> {
-    pub fn new(canvas: &mut Canvas<T>, game_started: Arc<Mutex<bool>>) -> GraphicsRenderer<T> {
+    pub fn new(
+        canvas: &mut Canvas<T>,
+        world_controls: Arc<Mutex<WorldControls>>,
+    ) -> GraphicsRenderer<T> {
         GraphicsRenderer {
-            game_started,
+            world_controls,
             cur_window: 0,
             windows: vec![Box::new(Menu::new()), Box::new(Game::new())],
             font_id: canvas
@@ -63,7 +62,7 @@ impl<T: Renderer> GraphicsRenderer<T> {
         window: &Window,
         canvas: &mut Canvas<T>,
         drag: PhysicalPosition<f32>,
-        world: Option<&RenderableWorld>,
+        world: Option<&RenderableWorld>
     ) {
         self.windows[self.cur_window].draw(
             context,
@@ -72,7 +71,7 @@ impl<T: Renderer> GraphicsRenderer<T> {
             canvas,
             self.font_id,
             drag,
-            world,
+            world
         );
     }
 
@@ -96,11 +95,27 @@ impl<T: Renderer> GraphicsRenderer<T> {
                         window,
                         canvas,
                         PhysicalPosition { x: 0.0, y: 0.0 },
-                        None,
+                        None
                     );
                 }
             }
-            ClickAction::StartGame => *self.game_started.lock().unwrap() = true,
+            ClickAction::StartGame => (*self.world_controls.lock().unwrap()).started = true,
+            ClickAction::PlayPause => {
+                let paused_state = (*self.world_controls.lock().unwrap()).paused;
+                (*self.world_controls.lock().unwrap()).paused = !paused_state;
+            },
+            ClickAction::Step => {
+                (*self.world_controls.lock().unwrap()).step = true;
+            },
+            ClickAction::SpeedChange => {
+                let current_speed = (*self.world_controls.lock().unwrap()).speed;
+                
+                (*self.world_controls.lock().unwrap()).speed = match current_speed {
+                    GameSpeed::Slow => GameSpeed::Medium,
+                    GameSpeed::Medium => GameSpeed::Fast,
+                    GameSpeed::Fast => GameSpeed::Slow
+                }
+            }
             _ => {}
         }
     }
